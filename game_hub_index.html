@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Games</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Verdana', sans-serif;
+            background-color: #f8f9fa;
+            color: #2c3e50;
+            line-height: 1.5;
+            padding: 2rem;
+            font-size: 18px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: #ffffff;
+            border-radius: 8px;
+            padding: 2rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 1rem;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: normal;
+            margin-bottom: 0.5rem;
+            color: #495057;
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            color: #6c757d;
+            font-weight: normal;
+        }
+
+        .games-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .game-card {
+            background: #f8f9fa;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            padding: 1.5rem;
+            transition: border-color 0.2s ease;
+            cursor: pointer;
+        }
+
+        .game-card:hover {
+            border-color: #6c757d;
+        }
+
+        .game-card:focus {
+            outline: 3px solid #007bff;
+            outline-offset: 2px;
+        }
+
+        .game-header {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .game-icon {
+            font-size: 2rem;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #e9ecef;
+            border-radius: 8px;
+            flex-shrink: 0;
+        }
+
+        .game-title {
+            font-size: 1.3rem;
+            font-weight: bold;
+            color: #495057;
+            margin: 0;
+        }
+
+        .game-description {
+            color: #6c757d;
+            margin-bottom: 1rem;
+            font-size: 1rem;
+        }
+
+        .play-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 6px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s ease;
+        }
+
+        .play-btn:hover {
+            background: #218838;
+        }
+
+        .play-btn:focus {
+            outline: 3px solid #007bff;
+            outline-offset: 2px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 2rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 0.9rem;
+        }
+
+        /* High contrast option */
+        .high-contrast {
+            background: #000000;
+            color: #ffffff;
+        }
+
+        .high-contrast .container {
+            background: #000000;
+            border: 2px solid #ffffff;
+        }
+
+        .high-contrast .game-card {
+            background: #222222;
+            border-color: #ffffff;
+            color: #ffffff;
+        }
+
+        .high-contrast .game-icon {
+            background: #444444;
+            color: #ffffff;
+        }
+
+        .high-contrast .play-btn {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* Keyboard navigation indicators */
+        .keyboard-hint {
+            background: #e7f3ff;
+            border: 1px solid #b6d7ff;
+            border-radius: 4px;
+            padding: 0.5rem;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            text-align: center;
+            color: #0056b3;
+        }
+
+        /* Reduce motion for users who prefer it */
+        @media (prefers-reduced-motion: reduce) {
+            * {
+                animation: none !important;
+                transition: none !important;
+            }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+                font-size: 16px;
+            }
+            
+            .title {
+                font-size: 1.8rem;
+            }
+            
+            .game-header {
+                flex-direction: column;
+                text-align: center;
+                gap: 0.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 class="title">Learning Games</h1>
+            <p class="subtitle">Choose a game to play</p>
+        </div>
+
+        <div class="keyboard-hint">
+            💡 Tip: Use Tab to navigate, Enter to select, or press 1-4 on your keyboard
+        </div>
+
+        <div class="games-list">
+            <div class="game-card" tabindex="0" onclick="playGame('SensoryShapeSorterGame.html')" onkeypress="handleKeyPress(event, 'SensoryShapeSorterGame.html')">
+                <div class="game-header">
+                    <div class="game-icon">🔷</div>
+                    <h2 class="game-title">Shape Sorter</h2>
+                </div>
+                <p class="game-description">Sort shapes by color and type. Practice pattern recognition in a calm environment.</p>
+                <button class="play-btn" tabindex="-1">Play Game</button>
+            </div>
+
+            <div class="game-card" tabindex="0" onclick="playGame('PatternPainter.html')" onkeypress="handleKeyPress(event, 'PatternPainter.html')">
+                <div class="game-header">
+                    <div class="game-icon">🎨</div>
+                    <h2 class="game-title">Pattern Painter</h2>
+                </div>
+                <p class="game-description">Create and follow simple patterns with colors. Express creativity at your own pace.</p>
+                <button class="play-btn" tabindex="-1">Play Game</button>
+            </div>
+
+            <div class="game-card" tabindex="0" onclick="playGame('SoundSensory.html')" onkeypress="handleKeyPress(event, 'SoundSensory.html')">
+                <div class="game-header">
+                    <div class="game-icon">🔊</div>
+                    <h2 class="game-title">Sound Explorer</h2>
+                </div>
+                <p class="game-description">Explore different sounds and music. Control volume and choose what to hear.</p>
+                <button class="play-btn" tabindex="-1">Play Game</button>
+            </div>
+
+            <div class="game-card" tabindex="0" onclick="playGame('StorySequencer.html')" onkeypress="handleKeyPress(event, 'StorySequencer.html')">
+                <div class="game-header">
+                    <div class="game-icon">📚</div>
+                    <h2 class="game-title">Story Sequencer</h2>
+                </div>
+                <p class="game-description">Put story parts in order. Practice sequencing and storytelling skills.</p>
+                <button class="play-btn" tabindex="-1">Play Game</button>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Take your time and play at your own pace</p>
+        </div>
+    </div>
+
+    <script>
+        // Navigate to game with gentle transition
+        function playGame(gameFile) {
+            // Very subtle fade for those who can handle it
+            if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+                document.body.style.transition = 'opacity 0.2s ease';
+                document.body.style.opacity = '0.8';
+            }
+            
+            setTimeout(() => {
+                window.location.href = gameFile;
+            }, 100);
+        }
+
+        // Handle keyboard navigation
+        function handleKeyPress(event, gameFile) {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                playGame(gameFile);
+            }
+        }
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            switch(e.key) {
+                case '1':
+                    playGame('SensoryShapeSorterGame.html');
+                    break;
+                case '2':
+                    playGame('PatternPainter.html');
+                    break;
+                case '3':
+                    playGame('SoundSensory.html');
+                    break;
+                case '4':
+                    playGame('StorySequencer.html');
+                    break;
+            }
+        });
+
+        // Optional: Add high contrast toggle (uncomment if needed)
+        /*
+        function toggleHighContrast() {
+            document.body.classList.toggle('high-contrast');
+            localStorage.setItem('highContrast', document.body.classList.contains('high-contrast'));
+        }
+
+        // Load saved preference
+        if (localStorage.getItem('highContrast') === 'true') {
+            document.body.classList.add('high-contrast');
+        }
+        */
+    </script>
+</body>
+</html>
