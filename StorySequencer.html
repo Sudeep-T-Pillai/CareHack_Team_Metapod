@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Story Sequencer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+
+        /* Drag and Drop styles */
+        .story-card { 
+            touch-action: none; /* Prevents scrolling on touch devices when dragging */
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+        .dragging {
+            opacity: 0.5;
+            transform: scale(1.05);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .drop-zone {
+            transition: background-color 0.2s ease;
+        }
+        .drop-zone.over {
+            background-color: rgba(0,0,0,0.1);
+        }
+
+        /* Font style for accessibility */
+        .font-dyslexia-friendly { 
+            letter-spacing: 0.05em; 
+            word-spacing: 0.2em; 
+            line-height: 1.6; 
+        }
+
+        /* Color Themes */
+        .theme-default {
+            --bg-color: #f3f4f6; --text-color: #1f2937; --primary-accent: #3b82f6; --secondary-accent: #10b981;
+            --card-bg: #3b82f6; --card-text: #ffffff;
+            --success-color: #22c55e; --fail-color: #ef4444; --ui-bg: #ffffff; --ui-text: #1f2937;
+        }
+        .theme-high-contrast {
+            --bg-color: #000000; --text-color: #ffffff; --primary-accent: #ffff00; --secondary-accent: #00ffff;
+            --card-bg: #facc15; --card-text: #000000;
+            --success-color: #ffffff; --fail-color: #ff8080; --ui-bg: #222222; --ui-text: #ffffff;
+        }
+        .theme-calm {
+            --bg-color: #e0e7ff; --text-color: #3730a3; --primary-accent: #818cf8; --secondary-accent: #6ee7b7;
+            --card-bg: #a5b4fc; --card-text: #3730a3;
+            --success-color: #4ade80; --fail-color: #fca5a5; --ui-bg: #f0f9ff; --ui-text: #3730a3;
+        }
+    </style>
+</head>
+<body id="game-body" class="transition-colors duration-500">
+
+    <div id="app-container" class="min-h-screen flex flex-col items-center justify-center p-4" style="background-color: var(--bg-color); color: var(--text-color);">
+        
+        <header class="w-full max-w-6xl flex justify-between items-center p-4">
+            <h1 class="text-2xl md:text-4xl font-bold">Story Sequencer</h1>
+            <button id="open-settings-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                Settings
+            </button>
+        </header>
+
+        <main class="w-full max-w-4xl flex-grow flex flex-col items-center justify-center space-y-6 p-4">
+             <h2 class="text-2xl font-bold text-center">Tell The Story</h2>
+             <p class="text-lg text-center">Drag the cards into the correct order in the top row.</p>
+             
+             <div id="target-container" class="drop-zone w-full flex justify-center space-x-4 p-4 min-h-[120px] rounded-lg border-2 border-dashed" style="border-color: var(--text-color);">
+                <!-- Target drop zone for the story -->
+             </div>
+             
+             <div id="source-container" class="drop-zone w-full flex justify-center space-x-4 p-4 min-h-[120px] rounded-lg shadow-inner" style="background-color: var(--ui-bg);">
+                <!-- Jumbled cards start here -->
+             </div>
+             
+             <div id="feedback" class="h-8 text-xl font-bold" style="color: var(--success-color);"></div>
+             
+             <button id="check-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-3 px-6 rounded-lg shadow-md text-lg">Check Story</button>
+        </main>
+    </div>
+
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden z-50">
+        <div class="rounded-2xl shadow-2xl w-full max-w-lg max-h-full overflow-y-auto p-6 md:p-8" style="background-color: var(--ui-bg); color: var(--ui-text);">
+            <div class="flex justify-between items-center border-b pb-4 mb-4" style="border-color: var(--text-color);">
+                <h2 class="text-2xl font-bold">Accessibility Settings</h2>
+                <button id="close-settings-btn" class="text-3xl font-bold hover:opacity-75">&times;</button>
+            </div>
+            <div class="space-y-6">
+                <div>
+                    <h3 class="text-xl font-semibold mb-3" style="color: var(--primary-accent);">Visuals</h3>
+                    <div class="space-y-4 pl-4 border-l-4" style="border-color: var(--primary-accent);">
+                        <label class="block font-medium mb-1">Color Theme</label>
+                        <select id="color-theme-select" class="w-full p-2 border rounded-md" style="background-color: var(--bg-color); border-color: var(--text-color);"><option value="theme-default">Default</option><option value="theme-high-contrast">High Contrast</option><option value="theme-calm">Calm (Low Sensory)</option></select>
+                        <label class="block font-medium mb-1">Font Size: <span id="font-size-value">100</span>%</label>
+                        <input type="range" id="font-size-slider" min="80" max="200" value="100" class="w-full">
+                        <label class="block font-medium mb-1">Font Style</label>
+                        <div class="flex items-center space-x-2"><input type="checkbox" id="font-style-toggle" class="h-5 w-5 rounded"><label for="font-style-toggle">Enable Dyslexia-Friendly Text</label></div>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xl font-semibold mb-3" style="color: var(--secondary-accent);">Audio</h3>
+                    <div class="space-y-4 pl-4 border-l-4" style="border-color: var(--secondary-accent);">
+                        <label class="block font-medium mb-1">Sound Effects Volume: <span id="sfx-volume-value">50</span>%</label>
+                        <input type="range" id="sfx-volume-slider" min="0" max="100" value="50" class="w-full">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    /**
+     * ----------------------------------------------------------------
+     * StorySequencerGame: Main Controller for the standalone game.
+     * ----------------------------------------------------------------
+     */
+    const StorySequencerGame = {
+        // --- Properties ---
+        draggedItem: null,
+        story: [
+            { id: 1, text: '🍞 Get bread' },
+            { id: 2, text: '🥪 Make sandwich' },
+            { id: 3, text: '😋 Eat sandwich' }
+        ],
+        elements: {
+            body: document.getElementById('game-body'),
+            appContainer: document.getElementById('app-container'),
+            targetContainer: document.getElementById('target-container'),
+            sourceContainer: document.getElementById('source-container'),
+            feedback: document.getElementById('feedback'),
+            checkBtn: document.getElementById('check-btn'),
+            settingsModal: document.getElementById('settings-modal'),
+            openSettingsBtn: document.getElementById('open-settings-btn'),
+            closeSettingsBtn: document.getElementById('close-settings-btn'),
+            colorThemeSelect: document.getElementById('color-theme-select'),
+            fontSizeSlider: document.getElementById('font-size-slider'),
+            fontSizeValue: document.getElementById('font-size-value'),
+            fontStyleToggle: document.getElementById('font-style-toggle'),
+            sfxVolumeSlider: document.getElementById('sfx-volume-slider'),
+            sfxVolumeValue: document.getElementById('sfx-volume-value'),
+        },
+        audioCtx: new (window.AudioContext || window.webkitAudioContext)(),
+
+        // --- Initialization ---
+        init() {
+            this.applySettings();
+            this.addEventListeners();
+            this.startLevel();
+        },
+
+        // --- Game Logic ---
+        startLevel() {
+            this.elements.feedback.textContent = '';
+            this.elements.targetContainer.innerHTML = '';
+            this.elements.sourceContainer.innerHTML = '';
+            
+            // Shuffle and display cards in the source container
+            [...this.story]
+                .sort(() => 0.5 - Math.random())
+                .forEach(item => this.elements.sourceContainer.appendChild(this.createCard(item)));
+        },
+
+        createCard(item) {
+            const card = document.createElement('div');
+            card.id = `card-${item.id}`;
+            card.dataset.id = item.id;
+            card.draggable = true;
+            card.className = 'story-card w-28 h-28 flex items-center justify-center text-center p-2 rounded-lg shadow-md cursor-grab text-2xl';
+            card.style.backgroundColor = 'var(--card-bg)';
+            card.style.color = 'var(--card-text)';
+            card.textContent = item.text;
+            
+            card.addEventListener('dragstart', e => {
+                this.draggedItem = e.target;
+                // Use a timeout to allow the browser to create the drag image before applying the class
+                setTimeout(() => e.target.classList.add('dragging'), 0);
+            });
+            
+            card.addEventListener('dragend', e => {
+                e.target.classList.remove('dragging');
+            });
+
+            return card;
+        },
+
+        checkStory() {
+            const cardsInOrder = [...this.elements.targetContainer.querySelectorAll('.story-card')];
+            const isCorrect = cardsInOrder.length === this.story.length && cardsInOrder.every((card, i) => parseInt(card.dataset.id) === i + 1);
+            
+            if (isCorrect) {
+                this.playSfx('correct');
+                this.elements.feedback.textContent = 'That\'s a great story!';
+                this.elements.feedback.style.color = 'var(--success-color)';
+            } else {
+                this.playSfx('wrong');
+                this.elements.feedback.textContent = 'Let\'s try a different order.';
+                this.elements.feedback.style.color = 'var(--fail-color)';
+            }
+        },
+
+        // --- Settings Management ---
+        defaultSettings: {
+            colorTheme: 'theme-default',
+            fontSize: 100,
+            fontStyle: false,
+            sfxVolume: 50,
+        },
+        loadSettings() {
+            const saved = localStorage.getItem('storySequencerSettings');
+            return saved ? JSON.parse(saved) : this.defaultSettings;
+        },
+        saveSettings(settings) {
+            localStorage.setItem('storySequencerSettings', JSON.stringify(settings));
+        },
+        applySettings() {
+            const settings = this.loadSettings();
+            const { body, appContainer, colorThemeSelect, fontSizeSlider, fontSizeValue, fontStyleToggle, sfxVolumeSlider, sfxVolumeValue } = this.elements;
+
+            body.className = `transition-colors duration-500`;
+            body.classList.add(settings.colorTheme);
+            if (settings.fontStyle) body.classList.add('font-dyslexia-friendly');
+            
+            appContainer.style.fontSize = `${settings.fontSize}%`;
+            
+            colorThemeSelect.value = settings.colorTheme;
+            fontSizeSlider.value = settings.fontSize;
+            fontSizeValue.textContent = settings.fontSize;
+            fontStyleToggle.checked = settings.fontStyle;
+            sfxVolumeSlider.value = settings.sfxVolume;
+            sfxVolumeValue.textContent = settings.sfxVolume;
+        },
+        updateSetting(key, value) {
+            const settings = this.loadSettings();
+            settings[key] = value;
+            this.saveSettings(settings);
+            this.applySettings();
+        },
+
+        // --- Event Listeners ---
+        addEventListeners() {
+            const { openSettingsBtn, closeSettingsBtn, settingsModal, colorThemeSelect, fontSizeSlider, fontStyleToggle, sfxVolumeSlider, checkBtn, targetContainer, sourceContainer } = this.elements;
+            
+            openSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+            window.addEventListener('click', (e) => { if (e.target === settingsModal) settingsModal.classList.add('hidden'); });
+
+            colorThemeSelect.addEventListener('change', (e) => this.updateSetting('colorTheme', e.target.value));
+            fontSizeSlider.addEventListener('input', (e) => {
+                this.elements.fontSizeValue.textContent = e.target.value;
+                this.elements.appContainer.style.fontSize = `${e.target.value}%`;
+            });
+            fontSizeSlider.addEventListener('change', (e) => this.updateSetting('fontSize', e.target.value));
+            fontStyleToggle.addEventListener('change', (e) => this.updateSetting('fontStyle', e.target.checked));
+            sfxVolumeSlider.addEventListener('input', (e) => {
+                this.elements.sfxVolumeValue.textContent = e.target.value;
+                this.updateSetting('sfxVolume', e.target.value);
+            });
+            checkBtn.addEventListener('click', () => this.checkStory());
+
+            // Drag and Drop Listeners
+            [targetContainer, sourceContainer].forEach(container => {
+                container.addEventListener('dragover', e => {
+                    e.preventDefault();
+                    container.classList.add('over');
+                });
+                container.addEventListener('dragleave', () => {
+                    container.classList.remove('over');
+                });
+                container.addEventListener('drop', e => {
+                    e.preventDefault();
+                    container.classList.remove('over');
+                    if (this.draggedItem) {
+                        container.appendChild(this.draggedItem);
+                    }
+                });
+            });
+        },
+
+        // --- Audio ---
+        playSfx(type) {
+            if (!this.audioCtx) return;
+            const volume = this.loadSettings().sfxVolume / 100;
+            if (volume === 0) return;
+
+            const oscillator = this.audioCtx.createOscillator();
+            const gainNode = this.audioCtx.createGain();
+            oscillator.connect(gainNode);
+            gainNode.connect(this.audioCtx.destination);
+            gainNode.gain.setValueAtTime(volume, this.audioCtx.currentTime);
+
+            if (type === 'correct') { oscillator.type = 'sine'; oscillator.frequency.setValueAtTime(523.25, this.audioCtx.currentTime); oscillator.frequency.exponentialRampToValueAtTime(1046.50, this.audioCtx.currentTime + 0.2); } 
+            else if (type === 'wrong') { oscillator.type = 'square'; oscillator.frequency.setValueAtTime(220, this.audioCtx.currentTime); oscillator.frequency.exponentialRampToValueAtTime(110, this.audioCtx.currentTime + 0.2); } 
+            
+            oscillator.start();
+            oscillator.stop(this.audioCtx.currentTime + 0.2);
+        }
+    };
+
+    // --- Start the Application ---
+    StorySequencerGame.init();
+});
+</script>
+</body>
+</html>

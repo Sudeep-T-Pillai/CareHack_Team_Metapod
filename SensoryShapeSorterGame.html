@@ -1,0 +1,620 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sensory Shape Sorter</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Using a common, highly readable font */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        /* Base styling for game elements */
+        .shape, .bin {
+            width: 100px;
+            height: 100px;
+            cursor: grab;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .bin {
+            border: 4px dashed;
+            background-color: transparent;
+        }
+
+        /* Drag-and-drop related styling */
+        .dragging {
+            opacity: 0.5;
+            cursor: grabbing;
+            transform: scale(1.1);
+        }
+
+        .drag-over {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px currentColor;
+        }
+
+        /* Click-to-select styling */
+        .selected {
+            box-shadow: 0 0 20px 5px #3b82f6; /* blue-500 */
+            transform: scale(1.1);
+        }
+
+        /* Hint styling */
+        .hint-glow {
+            animation: glow 1.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from { box-shadow: 0 0 10px currentColor; }
+            to { box-shadow: 0 0 30px 10px currentColor; }
+        }
+
+        /* Animation toggle styling */
+        .no-animations .sparkle {
+            display: none;
+        }
+
+        .sparkle {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: gold;
+            border-radius: 50%;
+            pointer-events: none;
+            opacity: 0;
+            animation: sparkle-anim 0.8s forwards;
+        }
+
+        @keyframes sparkle-anim {
+            0% { transform: scale(0); opacity: 0; }
+            50% { opacity: 1; }
+            100% { transform: scale(1.5) translateY(-50px); opacity: 0; }
+        }
+
+        /* Dyslexia-friendly font settings */
+        .font-dyslexia-friendly {
+            letter-spacing: 0.05em;
+            word-spacing: 0.2em;
+            line-height: 1.6;
+        }
+
+        /* Color Themes */
+        .theme-default {
+            --bg-color: #f3f4f6; /* gray-100 */
+            --text-color: #1f2937; /* gray-800 */
+            --shape-color-1: #ef4444; /* red-500 */
+            --shape-color-2: #3b82f6; /* blue-500 */
+            --shape-color-3: #22c55e; /* green-500 */
+            --shape-color-4: #eab308; /* yellow-500 */
+            --bin-border-color: #9ca3af; /* gray-400 */
+            --success-color: #22c55e; /* green-500 */
+        }
+        .theme-high-contrast {
+            --bg-color: #000000;
+            --text-color: #ffffff;
+            --shape-color-1: #ffffff;
+            --shape-color-2: #ffffff;
+            --shape-color-3: #ffffff;
+            --shape-color-4: #ffffff;
+            --bin-border-color: #ffffff;
+            --success-color: #ffffff;
+        }
+        .theme-calm {
+            --bg-color: #e0e7ff; /* indigo-100 */
+            --text-color: #3730a3; /* indigo-800 */
+            --shape-color-1: #a5b4fc; /* indigo-300 */
+            --shape-color-2: #93c5fd; /* blue-300 */
+            --shape-color-3: #99f6e4; /* teal-200 */
+            --shape-color-4: #fde68a; /* amber-200 */
+            --bin-border-color: #6366f1; /* indigo-500 */
+            --success-color: #4ade80; /* green-400 */
+        }
+    </style>
+</head>
+<body id="game-body" class="theme-default transition-colors duration-500">
+
+    <div id="app-container" class="min-h-screen flex flex-col items-center justify-center p-4" style="background-color: var(--bg-color); color: var(--text-color);">
+
+        <!-- Header: Title and Settings Button -->
+        <header class="w-full max-w-4xl flex justify-between items-center p-4">
+            <h1 class="text-2xl md:text-4xl font-bold">Sensory Shape Sorter</h1>
+            <button id="open-settings-btn" class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">
+                Accessibility Settings
+            </button>
+        </header>
+
+        <!-- Game Area -->
+        <main class="w-full max-w-4xl flex-grow flex flex-col items-center justify-center space-y-8 p-4">
+            <!-- Instructions -->
+            <div id="instructions" class="text-center text-lg md:text-xl p-4 rounded-lg">
+                <p id="instruction-text">Match the shape below to its home.</p>
+            </div>
+
+            <!-- Shape to be dragged -->
+            <div id="shape-container" class="h-32 flex items-center justify-center">
+                <!-- Shape will be injected here by JS -->
+            </div>
+
+            <!-- Bins for dropping shapes -->
+            <div id="bins-container" class="w-full grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8">
+                <!-- Bins will be injected here by JS -->
+            </div>
+
+            <!-- Feedback Area -->
+            <div id="feedback-area" class="h-16 text-2xl font-bold flex items-center justify-center" style="color: var(--success-color);"></div>
+
+            <!-- Gameplay Helper Buttons -->
+            <div class="flex space-x-4 mt-4">
+                <button id="hint-btn" class="bg-yellow-500 hover:bg-yellow-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105">Show Hint</button>
+                <button id="next-btn" class="bg-green-500 hover:bg-green-600 text-white font-bold py-2 px-4 rounded-lg shadow-md transition-transform transform hover:scale-105 hidden">Next Shape</button>
+            </div>
+        </main>
+    </div>
+
+    <!-- Accessibility Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center p-4 hidden">
+        <div class="bg-white text-gray-800 rounded-2xl shadow-2xl w-full max-w-lg max-h-full overflow-y-auto p-6 md:p-8">
+            <div class="flex justify-between items-center border-b pb-4 mb-4">
+                <h2 class="text-2xl font-bold">Accessibility Settings</h2>
+                <button id="close-settings-btn" class="text-3xl font-bold text-gray-500 hover:text-gray-800">&times;</button>
+            </div>
+
+            <!-- Settings Content -->
+            <div class="space-y-6">
+                <!-- Visuals Section -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 text-blue-600">Visuals</h3>
+                    <div class="space-y-4 pl-4 border-l-4 border-blue-200">
+                        <!-- Color Theme -->
+                        <div>
+                            <label for="color-theme-select" class="block font-medium mb-1">Color Theme</label>
+                            <select id="color-theme-select" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="theme-default">Default</option>
+                                <option value="theme-high-contrast">High Contrast</option>
+                                <option value="theme-calm">Calm (Low Sensory)</option>
+                            </select>
+                            <p class="text-sm text-gray-500 mt-1">Changes the color scheme of the game. High Contrast and Calm modes can reduce visual stress.</p>
+                        </div>
+                        <!-- Font Size -->
+                        <div>
+                            <label for="font-size-slider" class="block font-medium mb-1">Font Size: <span id="font-size-value">100</span>%</label>
+                            <input type="range" id="font-size-slider" min="80" max="200" value="100" class="w-full">
+                            <p class="text-sm text-gray-500 mt-1">Increases the size of all text for better readability.</p>
+                        </div>
+                         <!-- Font Style -->
+                        <div>
+                            <label class="block font-medium mb-1">Font Style</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="font-style-toggle" class="h-5 w-5 rounded">
+                                <label for="font-style-toggle">Enable Dyslexia-Friendly Text</label>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-1">Increases letter and word spacing to improve readability for some users.</p>
+                        </div>
+                        <!-- Animations -->
+                        <div>
+                            <label class="block font-medium mb-1">Animations</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="checkbox" id="animations-toggle" class="h-5 w-5 rounded" checked>
+                                <label for="animations-toggle">Enable celebratory animations</label>
+                            </div>
+                            <p class="text-sm text-gray-500 mt-1">Turn off sparkling effects to reduce visual clutter.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Audio Section -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 text-green-600">Audio</h3>
+                    <div class="space-y-4 pl-4 border-l-4 border-green-200">
+                        <!-- SFX Volume -->
+                        <div>
+                            <label for="sfx-volume-slider" class="block font-medium mb-1">Sound Effects Volume: <span id="sfx-volume-value">50</span>%</label>
+                            <input type="range" id="sfx-volume-slider" min="0" max="100" value="50" class="w-full">
+                        </div>
+                        <!-- Music Volume -->
+                        <div>
+                            <label for="music-volume-slider" class="block font-medium mb-1">Music Volume: <span id="music-volume-value">30</span>%</label>
+                            <input type="range" id="music-volume-slider" min="0" max="100" value="30" class="w-full">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Gameplay Section -->
+                <div>
+                    <h3 class="text-xl font-semibold mb-3 text-yellow-600">Gameplay</h3>
+                    <div class="space-y-4 pl-4 border-l-4 border-yellow-200">
+                         <!-- Interaction Mode -->
+                        <div>
+                            <label for="interaction-mode-select" class="block font-medium mb-1">Interaction Mode</label>
+                            <select id="interaction-mode-select" class="w-full p-2 border border-gray-300 rounded-md">
+                                <option value="drag">Drag and Drop</option>
+                                <option value="click">Click to Select</option>
+                            </select>
+                            <p class="text-sm text-gray-500 mt-1">Choose 'Click' if dragging is difficult. Click the shape, then click its home.</p>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- DOM ELEMENT REFERENCES ---
+            const gameBody = document.getElementById('game-body');
+            const appContainer = document.getElementById('app-container');
+            const shapeContainer = document.getElementById('shape-container');
+            const binsContainer = document.getElementById('bins-container');
+            const feedbackArea = document.getElementById('feedback-area');
+            const instructionText = document.getElementById('instruction-text');
+            const hintBtn = document.getElementById('hint-btn');
+            const nextBtn = document.getElementById('next-btn');
+
+            // Settings Modal Elements
+            const settingsModal = document.getElementById('settings-modal');
+            const openSettingsBtn = document.getElementById('open-settings-btn');
+            const closeSettingsBtn = document.getElementById('close-settings-btn');
+
+            // Settings Controls
+            const colorThemeSelect = document.getElementById('color-theme-select');
+            const fontSizeSlider = document.getElementById('font-size-slider');
+            const fontSizeValue = document.getElementById('font-size-value');
+            const fontStyleToggle = document.getElementById('font-style-toggle');
+            const animationsToggle = document.getElementById('animations-toggle');
+            const sfxVolumeSlider = document.getElementById('sfx-volume-slider');
+            const sfxVolumeValue = document.getElementById('sfx-volume-value');
+            const musicVolumeSlider = document.getElementById('music-volume-slider');
+            const musicVolumeValue = document.getElementById('music-volume-value');
+            const interactionModeSelect = document.getElementById('interaction-mode-select');
+
+            // --- GAME STATE & DATA ---
+            const shapes = [
+                { id: 'square', svg: `<div class="shape" style="background-color: var(--shape-color-1); border-radius: 8px;"></div>` },
+                { id: 'circle', svg: `<div class="shape" style="background-color: var(--shape-color-2); border-radius: 50%;"></div>` },
+                { id: 'triangle', svg: `<div class="shape" style="width: 0; height: 0; border-left: 50px solid transparent; border-right: 50px solid transparent; border-bottom: 100px solid var(--shape-color-3); background-color: transparent;"></div>` },
+                { id: 'star', svg: `<div class="shape" style="clip-path: polygon(50% 0%, 61% 35%, 98% 35%, 68% 57%, 79% 91%, 50% 70%, 21% 91%, 32% 57%, 2% 35%, 39% 35%); background-color: var(--shape-color-4);"></div>` }
+            ];
+
+            let currentShape = null;
+            let selectedShapeElement = null;
+            let isGameActive = true;
+
+            // --- AUDIO CONTEXT & TONE.JS SIMULATION ---
+            // This simulates Tone.js for sound generation without external libraries, as per instructions.
+            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+            function playSound(type) {
+                if (!audioCtx) return;
+                const settings = loadSettings();
+                const volume = settings.sfxVolume / 100;
+                if (volume === 0) return;
+
+                const oscillator = audioCtx.createOscillator();
+                const gainNode = audioCtx.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+
+                gainNode.gain.setValueAtTime(volume, audioCtx.currentTime);
+
+                if (type === 'correct') {
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(440, audioCtx.currentTime); // A4
+                    oscillator.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.2);
+                } else if (type === 'wrong') {
+                    oscillator.type = 'square';
+                    oscillator.frequency.setValueAtTime(220, audioCtx.currentTime); // A3
+                    oscillator.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.2);
+                } else { // 'click'
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(660, audioCtx.currentTime); // E5
+                }
+
+                oscillator.start();
+                oscillator.stop(audioCtx.currentTime + 0.2);
+            }
+
+            // --- SETTINGS MANAGEMENT ---
+            const defaultSettings = {
+                colorTheme: 'theme-default',
+                fontSize: 100,
+                fontStyle: false,
+                animations: true,
+                sfxVolume: 50,
+                musicVolume: 30, // Placeholder for music
+                interactionMode: 'drag'
+            };
+
+            function saveSettings(settings) {
+                localStorage.setItem('sensoryShapeSorterSettings', JSON.stringify(settings));
+            }
+
+            function loadSettings() {
+                const saved = localStorage.getItem('sensoryShapeSorterSettings');
+                return saved ? JSON.parse(saved) : defaultSettings;
+            }
+
+            function applySettings() {
+                const settings = loadSettings();
+
+                // Apply color theme
+                gameBody.className = `${settings.colorTheme} transition-colors duration-500`;
+                if (settings.fontStyle) gameBody.classList.add('font-dyslexia-friendly');
+                if (!settings.animations) gameBody.classList.add('no-animations');
+
+                // Apply font size
+                appContainer.style.fontSize = `${settings.fontSize}%`;
+                fontSizeSlider.value = settings.fontSize;
+                fontSizeValue.textContent = settings.fontSize;
+
+                // Apply font style
+                fontStyleToggle.checked = settings.fontStyle;
+
+                // Apply animations
+                animationsToggle.checked = settings.animations;
+
+                // Apply volumes
+                sfxVolumeSlider.value = settings.sfxVolume;
+                sfxVolumeValue.textContent = settings.sfxVolume;
+                musicVolumeSlider.value = settings.musicVolume;
+                musicVolumeValue.textContent = settings.musicVolume;
+
+                // Apply interaction mode
+                interactionModeSelect.value = settings.interactionMode;
+
+                // Re-initialize game to reflect changes
+                initGame();
+            }
+
+            function updateSetting(key, value) {
+                const settings = loadSettings();
+                settings[key] = value;
+                saveSettings(settings);
+                applySettings();
+            }
+
+            // --- GAME LOGIC ---
+            function shuffleArray(array) {
+                for (let i = array.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [array[i], array[j]] = [array[j], array[i]];
+                }
+                return array;
+            }
+
+            function initGame() {
+                isGameActive = true;
+                feedbackArea.textContent = '';
+                hintBtn.classList.remove('hidden');
+                nextBtn.classList.add('hidden');
+                instructionText.textContent = "Match the shape below to its home.";
+
+                // Remove any old hint glows
+                document.querySelectorAll('.hint-glow').forEach(el => el.classList.remove('hint-glow'));
+
+                const shuffledShapes = shuffleArray([...shapes]);
+                currentShape = shuffledShapes[0];
+
+                // Display the shape to be matched
+                shapeContainer.innerHTML = currentShape.svg;
+                const draggableShape = shapeContainer.querySelector('.shape');
+                draggableShape.id = `shape-${currentShape.id}`;
+                draggableShape.dataset.shapeId = currentShape.id;
+
+                // Display the bins
+                binsContainer.innerHTML = '';
+                const binShapes = shuffleArray([...shapes]);
+                binShapes.forEach(shapeInfo => {
+                    const bin = document.createElement('div');
+                    bin.classList.add('bin');
+                    bin.style.borderColor = `var(--bin-border-color)`;
+                    bin.dataset.shapeId = shapeInfo.id;
+
+                    const binShape = document.createElement('div');
+                    binShape.innerHTML = shapeInfo.svg;
+                    binShape.style.opacity = '0.3';
+                    binShape.style.transform = 'scale(0.8)';
+                    bin.appendChild(binShape);
+
+                    binsContainer.appendChild(bin);
+                });
+
+                setupInteractions();
+            }
+
+            function handleCorrectMatch(binElement) {
+                if (!isGameActive) return;
+                isGameActive = false;
+
+                playSound('correct');
+                feedbackArea.textContent = 'Great Job!';
+
+                // Visual feedback for success
+                binElement.style.borderColor = 'var(--success-color)';
+                binElement.style.backgroundColor = 'rgba(34, 197, 94, 0.2)';
+
+                // Hide the matched shape and show next button
+                shapeContainer.innerHTML = '';
+                hintBtn.classList.add('hidden');
+                nextBtn.classList.remove('hidden');
+
+                // Sparkle animation
+                createSparkles(binElement);
+            }
+
+            function createSparkles(element) {
+                 if (!loadSettings().animations) return;
+                const rect = element.getBoundingClientRect();
+                for (let i = 0; i < 15; i++) {
+                    const sparkle = document.createElement('div');
+                    sparkle.className = 'sparkle';
+                    sparkle.style.left = `${rect.left + Math.random() * rect.width}px`;
+                    sparkle.style.top = `${rect.top + Math.random() * rect.height}px`;
+                    document.body.appendChild(sparkle);
+                    setTimeout(() => sparkle.remove(), 800);
+                }
+            }
+
+            // --- INTERACTION LOGIC (DRAG & CLICK) ---
+            function setupInteractions() {
+                const mode = loadSettings().interactionMode;
+                const draggableShape = shapeContainer.querySelector('.shape');
+                const bins = binsContainer.querySelectorAll('.bin');
+
+                // Clear previous listeners
+                if (draggableShape) {
+                    draggableShape.removeEventListener('dragstart', handleDragStart);
+                    draggableShape.removeEventListener('click', handleShapeClick);
+                    draggableShape.draggable = false;
+                    draggableShape.style.cursor = 'default';
+                }
+                bins.forEach(bin => {
+                    bin.removeEventListener('dragover', handleDragOver);
+                    bin.removeEventListener('dragleave', handleDragLeave);
+                    bin.removeEventListener('drop', handleDrop);
+                    bin.removeEventListener('click', handleBinClick);
+                });
+
+                if (mode === 'drag') {
+                    setupDragAndDrop(draggableShape, bins);
+                } else {
+                    setupClickToSelect(draggableShape, bins);
+                }
+            }
+
+            // Drag and Drop implementation
+            function setupDragAndDrop(draggableShape, bins) {
+                if (!draggableShape) return;
+                draggableShape.draggable = true;
+                draggableShape.style.cursor = 'grab';
+
+                draggableShape.addEventListener('dragstart', handleDragStart);
+
+                bins.forEach(bin => {
+                    bin.addEventListener('dragover', handleDragOver);
+                    bin.addEventListener('dragleave', handleDragLeave);
+                    bin.addEventListener('drop', handleDrop);
+                });
+            }
+
+            function handleDragStart(e) {
+                e.dataTransfer.setData('text/plain', e.target.dataset.shapeId);
+                e.target.classList.add('dragging');
+            }
+
+            function handleDragOver(e) {
+                e.preventDefault();
+                this.classList.add('drag-over');
+            }
+
+            function handleDragLeave() {
+                this.classList.remove('drag-over');
+            }
+
+            function handleDrop(e) {
+                e.preventDefault();
+                this.classList.remove('drag-over');
+                shapeContainer.querySelector('.shape').classList.remove('dragging');
+
+                const droppedShapeId = e.dataTransfer.getData('text/plain');
+                if (this.dataset.shapeId === droppedShapeId) {
+                    handleCorrectMatch(this);
+                } else {
+                    playSound('wrong');
+                }
+            }
+
+            // Click to Select implementation
+            function setupClickToSelect(shape, bins) {
+                if (!shape) return;
+                shape.style.cursor = 'pointer';
+                shape.addEventListener('click', handleShapeClick);
+                bins.forEach(bin => bin.addEventListener('click', () => handleBinClick(bin)));
+            }
+
+            function handleShapeClick(e) {
+                if (!isGameActive) return;
+                playSound('click');
+                // Deselect if already selected
+                if (e.currentTarget.classList.contains('selected')) {
+                    e.currentTarget.classList.remove('selected');
+                    selectedShapeElement = null;
+                    instructionText.textContent = "Match the shape below to its home.";
+                } else {
+                    // Deselect any other selected items first (though there should only be one)
+                    document.querySelectorAll('.selected').forEach(el => el.classList.remove('selected'));
+                    e.currentTarget.classList.add('selected');
+                    selectedShapeElement = e.currentTarget;
+                    instructionText.textContent = "Now, click on the shape's home.";
+                }
+            }
+
+            function handleBinClick(bin) {
+                if (!isGameActive || !selectedShapeElement) return;
+
+                if (bin.dataset.shapeId === selectedShapeElement.dataset.shapeId) {
+                    handleCorrectMatch(bin);
+                } else {
+                    playSound('wrong');
+                    selectedShapeElement.classList.remove('selected');
+                    selectedShapeElement = null;
+                    instructionText.textContent = "Not quite. Try matching the shape again.";
+                }
+            }
+
+            // --- EVENT LISTENERS ---
+            // Modal Listeners
+            openSettingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+            closeSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+            window.addEventListener('click', (e) => {
+                if (e.target === settingsModal) {
+                    settingsModal.classList.add('hidden');
+                }
+            });
+
+            // Settings Change Listeners
+            colorThemeSelect.addEventListener('change', (e) => updateSetting('colorTheme', e.target.value));
+            fontSizeSlider.addEventListener('input', (e) => {
+                const settings = loadSettings();
+                settings.fontSize = e.target.value;
+                fontSizeValue.textContent = e.target.value;
+                appContainer.style.fontSize = `${e.target.value}%`;
+                saveSettings(settings); // Save on input for responsiveness
+            });
+            fontStyleToggle.addEventListener('change', (e) => updateSetting('fontStyle', e.target.checked));
+            animationsToggle.addEventListener('change', (e) => updateSetting('animations', e.target.checked));
+            sfxVolumeSlider.addEventListener('input', (e) => {
+                sfxVolumeValue.textContent = e.target.value;
+                updateSetting('sfxVolume', e.target.value);
+            });
+            musicVolumeSlider.addEventListener('input', (e) => {
+                musicVolumeValue.textContent = e.target.value;
+                updateSetting('musicVolume', e.target.value);
+            });
+            interactionModeSelect.addEventListener('change', (e) => updateSetting('interactionMode', e.target.value));
+
+            // Game Button Listeners
+            nextBtn.addEventListener('click', initGame);
+            hintBtn.addEventListener('click', () => {
+                if (!isGameActive) return;
+                const correctBin = binsContainer.querySelector(`.bin[data-shape-id="${currentShape.id}"]`);
+                if (correctBin) {
+                    correctBin.classList.add('hint-glow');
+                    setTimeout(() => correctBin.classList.remove('hint-glow'), 2000);
+                }
+            });
+
+            // --- INITIALIZATION ---
+            applySettings();
+        });
+    </script>
+</body>
+</html>
